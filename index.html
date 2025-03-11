@@ -10,20 +10,19 @@
             padding: 0;
             background-color: black;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            overflow: hidden;
-            flex-direction: column;
+            overflow: auto; /* Zmieniono z hidden na auto, aby umożliwić przewijanie */
         }
 
         #clockContainer {
-            position: absolute;
+            position: relative; /* Zmieniono z absolute na relative */
             width: 80vmin;
             height: 80vmin;
-            margin: auto;
             transition: all 0.5s ease;
             touch-action: none;
+            margin-top: 5vmin; /* Dodano odstęp od góry */
         }
 
         #analogClock, #simpleAnalogClock, #newAnalogClock, #dateDisplay {
@@ -74,14 +73,18 @@
             z-index: 10;
             display: none;
             max-width: 90%;
+            margin-top: 85vmin; /* Przesunięto poniżej zegara */
         }
 
         @media only screen and (max-width: 768px) {
             #instructions {
                 display: block;
             }
-            body {
-                padding-bottom: 30vmin; /* Dodaje miejsce na instrukcje */
+        }
+
+        @media only screen and (min-width: 769px) {
+            #clockContainer {
+                margin-bottom: 5vmin; /* Dodatkowy odstęp na większych ekranach */
             }
         }
     </style>
@@ -106,8 +109,6 @@
     </div>
 
     <script>
-        // [Reszta kodu JavaScript pozostaje bez zmian]
-        
         const clockContainer = document.getElementById('clockContainer');
         const analogClock = document.getElementById('analogClock');
         const simpleAnalogClock = document.getElementById('simpleAnalogClock');
@@ -180,7 +181,7 @@
             const clockHeight = clockContainer.offsetHeight;
 
             const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
+            const centerY = (window.innerHeight - document.getElementById('instructions').offsetHeight) / 2;
 
             const deltaX = (Math.random() - 0.5) * 100;
             const deltaY = (Math.random() - 0.5) * 100;
@@ -191,13 +192,14 @@
             const minLeft = 0;
             const maxLeft = window.innerWidth - clockWidth;
             const minTop = 0;
-            const maxTop = window.innerHeight - clockHeight;
+            const maxTop = window.innerHeight - clockHeight - document.getElementById('instructions').offsetHeight;
 
             newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
             newTop = Math.max(minTop, Math.min(newTop, maxTop));
 
             clockContainer.style.left = `${newLeft}px`;
             clockContainer.style.top = `${newTop}px`;
+            clockContainer.style.position = 'absolute'; // Przywracamy absolute dla ruchu
 
             showDate();
             clearInterval(przesunInterval);
