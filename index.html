@@ -1,448 +1,349 @@
-<!DOCTYPE html>
-<html lang="pl">
-<head>
-    <meta charset="UTF-8">
-    <title>Zegar</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: black;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
+        clockContainer.style.left = `${newLeft}px`;
+        clockContainer.style.top = `${newTop}px`;
 
-        #clockContainer {
-            position: absolute;
-            width: 80vmin;
-            height: 80vmin;
-            margin: auto;
-            transition: all 0.5s ease;
-        }
+        showDate();
+        clearInterval(przesunInterval);
+    }
 
-        #analogClock, #digitalClock, #simpleAnalogClock, #newAnalogClock, #dateDisplay {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            font-family: 'Arial', sans-serif;
-            transition: opacity 0.5s ease;
-        }
+    function showDate() {
+        const now = new Date();
+        const day = now.getDate();
+        const month = polishMonths[now.getMonth()];
+        const dayOfWeek = polishDays[now.getDay()];
 
-        #analogClock canvas, #simpleAnalogClock canvas, #newAnalogClock canvas {
-            width: 100%;
-            height: 100%;
-        }
+        dateDisplay.innerHTML = `<div>${day}</div><div>${month}</div><div>${dayOfWeek}</div>`;
+        hideClocks();
+        dateDisplay.classList.remove('hidden');
+        isDateVisible = true;
 
-        #digitalClock, #dateDisplay {
-            font-size: 10vmin;
-        }
+        setTimeout(() => {
+            dateDisplay.classList.add('hidden');
+            showClocks();
+            isDateVisible = false;
+            setPrzesunInterval(currentIntervalTime);
+        }, dateDisplayTime);
+    }
 
-        #dateDisplay {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: center;
-            text-align: left;
-            width: auto;
-            margin: 0 auto;
-        }
+    function hideClocks() {
+        modes.forEach(clock => clock.classList.add('hidden'));
+    }
 
-        #dateDisplay div {
-            margin: 5px 0;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-    </style>
-</head>
-<body>
-    <div id="clockContainer">
-        <div id="analogClock"><canvas id="analogCanvas"></canvas></div>
-        <div id="digitalClock" class="hidden"></div>
-        <div id="simpleAnalogClock" class="hidden"><canvas id="simpleAnalogCanvas"></canvas></div>
-        <div id="newAnalogClock" class="hidden"><canvas id="newAnalogCanvas"></canvas></div>
-        <div id="dateDisplay" class="hidden"></div>
-    </div>
-
-    <script>
-        const clockContainer = document.getElementById('clockContainer');
-        const analogClock = document.getElementById('analogClock');
-        const digitalClock = document.getElementById('digitalClock');
-        const simpleAnalogClock = document.getElementById('simpleAnalogClock');
-        const newAnalogClock = document.getElementById('newAnalogClock');
-        const dateDisplay = document.getElementById('dateDisplay');
-        const analogCanvas = document.getElementById('analogCanvas');
-        const simpleAnalogCanvas = document.getElementById('simpleAnalogCanvas');
-        const newAnalogCanvas = document.getElementById('newAnalogCanvas');
-
-        let scale = 80;
-        let currentMode = 0;
-        const modes = [analogClock, digitalClock, simpleAnalogClock, newAnalogClock];
-
-        const basicColors = [
-            'white', 'silver', 'gray', 'black', 
-            'red', 'maroon', 'yellow', 'olive', 
-            'lime', 'green', 'aqua', 'teal', 
-            'blue', 'navy', 'fuchsia', 'purple'
-        ];
-
-        let clockColorIndex = 0;
-        let secondHandColorIndex = 0;
-        let minuteHandColorIndex = 0;
-        let hourHandColorIndex = 0;
-        let showCircle = true;
-
-        let przesunInterval = null;
-        let currentIntervalTime = 5 * 60 * 1000;
-        let dateDisplayTime = 5000;
-        let isDateVisible = false;
-
-        const intervalMapping = {
-            '1': 1000,
-            '2': 10 * 1000,
-            '3': 30 * 1000,
-            '4': 60 * 1000,
-            '5': 5 * 60 * 1000
-        };
-
-        const dateDisplayMapping = {
-            '6': 1000,
-            '7': 10 * 1000,
-            '8': 30 * 1000,
-            '9': 60 * 1000,
-            '0': 5 * 60 * 1000
-        };
-
-        const polishMonths = [
-            'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
-            'lipca', 'sierpnia', 'września', 'października', 'listopada', 'grudnia'
-        ];
-
-        const polishDays = [
-            'niedziela', 'poniedziałek', 'wtorek', 'środa', 'czwartek', 'piątek', 'sobota'
-        ];
-
-        function resizeElements() {
-            resizeCanvas(analogCanvas);
-            resizeCanvas(simpleAnalogCanvas);
-            resizeCanvas(newAnalogCanvas);
-            digitalClock.style.fontSize = `${scale / 8}vmin`;
-            dateDisplay.style.fontSize = `${scale / 8}vmin`;
-        }
-
-        function resizeCanvas(canvas) {
-            canvas.width = clockContainer.offsetWidth;
-            canvas.height = clockContainer.offsetHeight;
-        }
-
-        window.addEventListener('resize', resizeElements);
-        resizeElements();
-
-        function setPrzesunInterval(time) {
-            if (przesunInterval) clearInterval(przesunInterval);
-            przesunInterval = setInterval(przesunZegar, time);
-        }
-
-        function przesunZegar() {
-            if (isDateVisible) return;
-
-            const clockWidth = clockContainer.offsetWidth;
-            const clockHeight = clockContainer.offsetHeight;
-
-            const centerX = window.innerWidth / 2;
-            const centerY = window.innerHeight / 2;
-
-            const deltaX = (Math.random() - 0.5) * 100;
-            const deltaY = (Math.random() - 0.5) * 100;
-
-            let newLeft = centerX + deltaX - clockWidth / 2;
-            let newTop = centerY + deltaY - clockHeight / 2;
-
-            const minLeft = 0;
-            const maxLeft = window.innerWidth - clockWidth;
-            const minTop = 0;
-            const maxTop = window.innerHeight - clockHeight;
-
-            newLeft = Math.max(minLeft, Math.min(newLeft, maxLeft));
-            newTop = Math.max(minTop, Math.min(newTop, maxTop));
-
-            clockContainer.style.left = `${newLeft}px`;
-            clockContainer.style.top = `${newTop}px`;
-
-            showDate();
-            clearInterval(przesunInterval);
-        }
-
-        function showDate() {
-            const now = new Date();
-            const day = now.getDate();
-            const month = polishMonths[now.getMonth()];
-            const dayOfWeek = polishDays[now.getDay()];
-
-            dateDisplay.innerHTML = `<div>${day}</div><div>${month}</div><div>${dayOfWeek}</div>`;
-            hideClocks();
-            dateDisplay.classList.remove('hidden');
-            isDateVisible = true;
-
-            setTimeout(() => {
-                dateDisplay.classList.add('hidden');
-                showClocks();
-                isDateVisible = false;
-                setPrzesunInterval(currentIntervalTime);
-            }, dateDisplayTime);
-        }
-
-        function hideClocks() {
-            modes.forEach(clock => clock.classList.add('hidden'));
-        }
-
-        function showClocks() {
-            setClockMode(currentMode);
-        }
-
-        setPrzesunInterval(currentIntervalTime);
-
-        function updateClock() {
-            const now = new Date();
-            const hours = now.getHours();
-            const minutes = now.getMinutes();
-            const seconds = now.getSeconds();
-
-            digitalClock.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            digitalClock.style.color = basicColors[clockColorIndex];
-
-            drawAnalogClock(analogCanvas, hours, minutes, seconds, true);
-            drawAnalogClock(simpleAnalogCanvas, hours, minutes, seconds, false);
-            drawNewAnalogClock(newAnalogCanvas, hours, minutes, seconds);
-        }
-
-        function drawAnalogClock(canvas, hours, minutes, seconds, showNumbers) {
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
-            const radius = Math.min(width, height) / 2 * 0.9;
-
-            ctx.clearRect(0, 0, width, height);
-            ctx.translate(width / 2, height / 2);
-
-            if (showCircle) {
-                ctx.beginPath();
-                ctx.arc(0, 0, radius, 0, Math.PI * 2);
-                ctx.strokeStyle = basicColors[clockColorIndex];
-                ctx.lineWidth = radius * 0.01;
-                ctx.stroke();
-            }
-
-            if (showNumbers) {
-                ctx.font = `${radius * 0.15}px Arial`;
-                ctx.fillStyle = basicColors[clockColorIndex];
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                for (let i = 1; i <= 12; i++) {
-                    const angle = (i - 3) * (Math.PI * 2) / 12;
-                    const x = Math.cos(angle) * radius * 0.85;
-                    const y = Math.sin(angle) * radius * 0.85;
-                    ctx.fillText(i, x, y);
-                }
-            } else {
-                ctx.strokeStyle = basicColors[clockColorIndex];
-                ctx.lineWidth = radius * 0.01;
-                for (let i = 0; i < 4; i++) {
-                    ctx.beginPath();
-                    const angle = i * Math.PI / 2;
-                    ctx.moveTo(Math.cos(angle) * radius * 0.9, Math.sin(angle) * radius * 0.9);
-                    ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
-                    ctx.stroke();
-                }
-            }
-
-            // Rysowanie kółeczka PRZED wskazówkami
-            ctx.beginPath();
-            ctx.arc(0, 0, radius * 0.05, 0, Math.PI * 2);
-            ctx.fillStyle = basicColors[clockColorIndex];
-            ctx.fill();
-
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-
-            let hourAngle = (hours % 12 + minutes / 60) * 30 * Math.PI / 180 - Math.PI / 2;
-            drawHand(ctx, hourAngle, radius * 0.5, radius * 0.03, basicColors[hourHandColorIndex]);
-
-            let minuteAngle = (minutes + seconds / 60) * 6 * Math.PI / 180 - Math.PI / 2;
-            drawHand(ctx, minuteAngle, radius * 0.8, radius * 0.02, basicColors[minuteHandColorIndex]);
-
-            let secondAngle = seconds * 6 * Math.PI / 180 - Math.PI / 2;
-            drawHand(ctx, secondAngle, radius * 0.9, radius * 0.01, basicColors[secondHandColorIndex]);
-
-            ctx.shadowBlur = 0;
-            ctx.resetTransform();
-        }
-
-        function drawNewAnalogClock(canvas, hours, minutes, seconds) {
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
-            const radius = Math.min(width, height) / 2 * 0.9;
-
-            ctx.clearRect(0, 0, width, height);
-            ctx.translate(width / 2, height / 2);
-
-            if (showCircle) {
-                ctx.beginPath();
-                ctx.arc(0, 0, radius, 0, Math.PI * 2);
-                ctx.strokeStyle = basicColors[clockColorIndex];
-                ctx.lineWidth = radius * 0.02;
-                ctx.stroke();
-            }
-
-            // Rysowanie cyfr
-            ctx.font = `bold ${radius * 0.2}px Arial`;
-            ctx.fillStyle = basicColors[clockColorIndex];
-            ctx.textBaseline = "middle";
-            ctx.textAlign = "center";
-            for (let num = 1; num <= 12; num++) {
-                const ang = (num / 12) * 2 * Math.PI;
-                ctx.rotate(ang);
-                ctx.translate(0, -radius * 0.85);
-                ctx.rotate(-ang);
-                ctx.fillText(num.toString(), 0, 0);
-                ctx.rotate(ang);
-                ctx.translate(0, radius * 0.85);
-                ctx.rotate(-ang);
-            }
-
-            // Rysowanie kółeczka PRZED wskazówkami
-            ctx.beginPath();
-            ctx.arc(0, 0, radius * 0.05, 0, Math.PI * 2);
-            ctx.fillStyle = basicColors[clockColorIndex];
-            ctx.fill();
-
-            // Ustawienie cienia dla wskazówek
-            ctx.shadowOffsetX = 5;
-            ctx.shadowOffsetY = 5;
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-
-            // Rysowanie wskazówek
-            let hourAngle = ((hours % 12) / 12 + minutes / (12 * 60) + seconds / (12 * 60 * 60)) * 2 * Math.PI;
-            ctx.beginPath();
-            ctx.lineCap = 'round';
-            ctx.lineWidth = radius * 0.05;
-            ctx.strokeStyle = basicColors[hourHandColorIndex];
-            ctx.rotate(hourAngle);
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -radius * 0.5);
-            ctx.stroke();
-            ctx.rotate(-hourAngle);
-
-            let minuteAngle = (minutes / 60 + seconds / (60 * 60)) * 2 * Math.PI;
-            ctx.beginPath();
-            ctx.lineWidth = radius * 0.05;
-            ctx.strokeStyle = basicColors[minuteHandColorIndex];
-            ctx.rotate(minuteAngle);
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -radius * 0.8);
-            ctx.stroke();
-            ctx.rotate(-minuteAngle);
-
-            let secondAngle = (seconds / 60) * 2 * Math.PI;
-            ctx.beginPath();
-            ctx.lineWidth = radius * 0.01;
-            ctx.strokeStyle = basicColors[secondHandColorIndex];
-            ctx.rotate(secondAngle);
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -radius * 0.9);
-            ctx.stroke();
-            ctx.rotate(-secondAngle);
-
-            // Reset cieni
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-            ctx.shadowBlur = 0;
-
-            ctx.resetTransform();
-        }
-
-        function drawHand(ctx, angle, length, width, color) {
-            ctx.beginPath();
-            ctx.lineCap = 'round';
-            ctx.lineWidth = width;
-            ctx.strokeStyle = color;
-            ctx.moveTo(0, 0);
-            ctx.lineTo(Math.cos(angle) * length, Math.sin(angle) * length);
-            ctx.stroke();
-        }
-
-        function setClockMode(mode) {
-            modes.forEach((clock, index) => {
-                if (index === mode) clock.classList.remove('hidden');
-                else clock.classList.add('hidden');
-            });
-        }
-
+    function showClocks() {
         setClockMode(currentMode);
+    }
 
-        document.addEventListener('keydown', (e) => {
-            if (intervalMapping[e.key]) {
-                currentIntervalTime = intervalMapping[e.key];
-                if (!isDateVisible) setPrzesunInterval(currentIntervalTime);
-            } else if (dateDisplayMapping[e.key]) {
-                dateDisplayTime = dateDisplayMapping[e.key];
-            } else {
-                switch(e.key) {
-                    case 'ArrowUp':
-                        scale = Math.min(100, scale + 5);
-                        updateScale();
-                        break;
-                    case 'ArrowDown':
-                        scale = Math.max(20, scale - 5);
-                        updateScale();
-                        break;
-                    case 'ArrowRight':
-                        currentMode = (currentMode + 1) % 4;
-                        setClockMode(currentMode);
-                        break;
-                    case 'ArrowLeft':
-                        currentMode = (currentMode - 1 + 4) % 4;
-                        setClockMode(currentMode);
-                        break;
-                    case 'c':
+    setPrzesunInterval(currentIntervalTime);
+
+    function updateClock() {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+
+        digitalClock.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        digitalClock.style.color = basicColors[clockColorIndex];
+
+        drawAnalogClock(analogCanvas, hours, minutes, seconds, true);
+        drawAnalogClock(simpleAnalogCanvas, hours, minutes, seconds, false);
+        drawNewAnalogClock(newAnalogCanvas, hours, minutes, seconds);
+    }
+
+    function drawAnalogClock(canvas, hours, minutes, seconds, showNumbers) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const radius = Math.min(width, height) / 2 * 0.9;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.translate(width / 2, height / 2);
+
+        if (showCircle) {
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = basicColors[clockColorIndex];
+            ctx.lineWidth = radius * 0.01;
+            ctx.stroke();
+        }
+
+        if (showNumbers) {
+            ctx.font = `${radius * 0.15}px Arial`;
+            ctx.fillStyle = basicColors[clockColorIndex];
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (let i = 1; i <= 12; i++) {
+                const angle = (i - 3) * (Math.PI * 2) / 12;
+                const x = Math.cos(angle) * radius * 0.85;
+                const y = Math.sin(angle) * radius * 0.85;
+                ctx.fillText(i, x, y);
+            }
+        } else {
+            ctx.strokeStyle = basicColors[clockColorIndex];
+            ctx.lineWidth = radius * 0.01;
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                const angle = i * Math.PI / 2;
+                ctx.moveTo(Math.cos(angle) * radius * 0.9, Math.sin(angle) * radius * 0.9);
+                ctx.lineTo(Math.cos(angle) * radius, Math.sin(angle) * radius);
+                ctx.stroke();
+            }
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.05, 0, Math.PI * 2);
+        ctx.fillStyle = basicColors[clockColorIndex];
+        ctx.fill();
+
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+
+        let hourAngle = (hours % 12 + minutes / 60) * 30 * Math.PI / 180 - Math.PI / 2;
+        drawHand(ctx, hourAngle, radius * 0.5, radius * 0.03, basicColors[hourHandColorIndex]);
+
+        let minuteAngle = (minutes + seconds / 60) * 6 * Math.PI / 180 - Math.PI / 2;
+        drawHand(ctx, minuteAngle, radius * 0.8, radius * 0.02, basicColors[minuteHandColorIndex]);
+
+        let secondAngle = seconds * 6 * Math.PI / 180 - Math.PI / 2;
+        drawHand(ctx, secondAngle, radius * 0.9, radius * 0.01, basicColors[secondHandColorIndex]);
+
+        ctx.shadowBlur = 0;
+        ctx.resetTransform();
+    }
+
+    function drawNewAnalogClock(canvas, hours, minutes, seconds) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const radius = Math.min(width, height) / 2 * 0.9;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.translate(width / 2, height / 2);
+
+        if (showCircle) {
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = basicColors[clockColorIndex];
+            ctx.lineWidth = radius * 0.02;
+            ctx.stroke();
+        }
+
+        ctx.font = `bold ${radius * 0.2}px Arial`;
+        ctx.fillStyle = basicColors[clockColorIndex];
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
+        for (let num = 1; num <= 12; num++) {
+            const ang = (num / 12) * 2 * Math.PI;
+            ctx.rotate(ang);
+            ctx.translate(0, -radius * 0.85);
+            ctx.rotate(-ang);
+            ctx.fillText(num.toString(), 0, 0);
+            ctx.rotate(ang);
+            ctx.translate(0, radius * 0.85);
+            ctx.rotate(-ang);
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 0.05, 0, Math.PI * 2);
+        ctx.fillStyle = basicColors[clockColorIndex];
+        ctx.fill();
+
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+
+        let hourAngle = ((hours % 12) / 12 + minutes / (12 * 60) + seconds / (12 * 60 * 60)) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.lineCap = 'round';
+        ctx.lineWidth = radius * 0.05;
+        ctx.strokeStyle = basicColors[hourHandColorIndex];
+        ctx.rotate(hourAngle);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -radius * 0.5);
+        ctx.stroke();
+        ctx.rotate(-hourAngle);
+
+        let minuteAngle = (minutes / 60 + seconds / (60 * 60)) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.lineWidth = radius * 0.05;
+        ctx.strokeStyle = basicColors[minuteHandColorIndex];
+        ctx.rotate(minuteAngle);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -radius * 0.8);
+        ctx.stroke();
+        ctx.rotate(-minuteAngle);
+
+        let secondAngle = (seconds / 60) * 2 * Math.PI;
+        ctx.beginPath();
+        ctx.lineWidth = radius * 0.01;
+        ctx.strokeStyle = basicColors[secondHandColorIndex];
+        ctx.rotate(secondAngle);
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, -radius * 0.9);
+        ctx.stroke();
+        ctx.rotate(-secondAngle);
+
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.shadowBlur = 0;
+
+        ctx.resetTransform();
+    }
+
+    function drawHand(ctx, angle, length, width, color) {
+        ctx.beginPath();
+        ctx.lineCap = 'round';
+        ctx.lineWidth = width;
+        ctx.strokeStyle = color;
+        ctx.moveTo(0, 0);
+        ctx.lineTo(Math.cos(angle) * length, Math.sin(angle) * length);
+        ctx.stroke();
+    }
+
+    function setClockMode(mode) {
+        modes.forEach((clock, index) => {
+            if (index === mode) clock.classList.remove('hidden');
+            else clock.classList.add('hidden');
+        });
+    }
+
+    setClockMode(currentMode);
+
+    // Obsługa klawiatury (dla desktopu)
+    document.addEventListener('keydown', (e) => {
+        if (e.key >= '1' && e.key <= '5') {
+            intervalIndex = parseInt(e.key) - 1;
+            currentIntervalTime = intervalMapping[intervalIndex];
+            if (!isDateVisible) setPrzesunInterval(currentIntervalTime);
+        } else if (e.key >= '6' && e.key <= '9') {
+            dateDisplayIndex = parseInt(e.key) - 6;
+            dateDisplayTime = dateDisplayMapping[dateDisplayIndex];
+        } else if (e.key === '0') {
+            dateDisplayIndex = 4;
+            dateDisplayTime = dateDisplayMapping[dateDisplayIndex];
+        } else {
+            switch(e.key) {
+                case 'ArrowUp':
+                    scale = Math.min(100, scale + 5);
+                    updateScale();
+                    break;
+                case 'ArrowDown':
+                    scale = Math.max(20, scale - 5);
+                    updateScale();
+                    break;
+                case 'ArrowRight':
+                    currentMode = (currentMode + 1) % 4;
+                    setClockMode(currentMode);
+                    break;
+                case 'ArrowLeft':
+                    currentMode = (currentMode - 1 + 4) % 4;
+                    setClockMode(currentMode);
+                    break;
+                case 'c':
+                    clockColorIndex = (clockColorIndex + 1) % basicColors.length;
+                    break;
+                case 's':
+                    secondHandColorIndex = (secondHandColorIndex + 1) % basicColors.length;
+                    break;
+                case 'm':
+                    minuteHandColorIndex = (minuteHandColorIndex + 1) % basicColors.length;
+                    break;
+                case 'h':
+                    hourHandColorIndex = (hourHandColorIndex + 1) % basicColors.length;
+                    break;
+                case 'u':
+                    showCircle = !showCircle;
+                    break;
+            }
+        }
+    });
+
+    // Obsługa gestów dotykowych (dla smartfonów)
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    clockContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+    });
+
+    clockContainer.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+    });
+
+    clockContainer.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchDuration = Date.now() - touchStartTime;
+        const dx = touchEndX - touchStartX;
+        const dy = touchEndY - touchStartY;
+        const touchCount = e.changedTouches.length;
+
+        // Tapnięcia
+        if (Math.abs(dx) < 20 && Math.abs(dy) < 20) {
+            if (touchDuration >= 500) { // Długie przytrzymanie
+                showCircle = !showCircle;
+            } else { // Krótkie tapnięcie
+                switch (touchCount) {
+                    case 1:
                         clockColorIndex = (clockColorIndex + 1) % basicColors.length;
                         break;
-                    case 's':
+                    case 2:
                         secondHandColorIndex = (secondHandColorIndex + 1) % basicColors.length;
                         break;
-                    case 'm':
+                    case 3:
                         minuteHandColorIndex = (minuteHandColorIndex + 1) % basicColors.length;
                         break;
-                    case 'h':
+                    case 4:
                         hourHandColorIndex = (hourHandColorIndex + 1) % basicColors.length;
-                        break;
-                    case 'u':
-                        showCircle = !showCircle;
                         break;
                 }
             }
-        });
-
-        function updateScale() {
-            clockContainer.style.width = `${scale}vmin`;
-            clockContainer.style.height = `${scale}vmin`;
-            resizeElements();
         }
+        // Przesunięcia jednym palcem
+        else if (e.changedTouches.length === 1) {
+            if (Math.abs(dx) > Math.abs(dy)) { // Horyzontalne
+                if (dx > 50) {
+                    currentMode = (currentMode + 1) % 4;
+                    setClockMode(currentMode);
+                } else if (dx < -50) {
+                    currentMode = (currentMode - 1 + 4) % 4;
+                    setClockMode(currentMode);
+                }
+            } else { // Wertykalne
+                if (dy < -50) {
+                    scale = Math.min(100, scale + 5);
+                    updateScale();
+                } else if (dy > 50) {
+                    scale = Math.max(20, scale - 5);
+                    updateScale();
+                }
+            }
+        }
+        // Przesunięcia dwoma palcami
+        else if (e.changedTouches.length === 2) {
+            if (Math.abs(dx) > Math.abs(dy)) { // Horyzontalne
+                if (dx > 50) {
+                    intervalIndex = (intervalIndex + 1) % intervalMapping.length;
+                    currentIntervalTime = intervalMapping[intervalIndex];
+                    if (!isDateVisible) setPrzesunInterval(currentIntervalTime);
+                } else if (dx < -50) {
+                    dateDisplayIndex = (dateDisplayIndex + 1) % dateDisplayMapping.length;
+                    dateDisplayTime = dateDisplayMapping[dateDisplayIndex];
+                }
+            }
+        }
+    });
 
-        setInterval(updateClock, 1000);
-        updateClock();
-    </script>
-</body>
-</html>
+    function updateScale() {
+        clockContainer.style.width = `${scale}vmin`;
+        clockContainer.style.height = `${scale}vmin`;
+        resizeElements();
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
