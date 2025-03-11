@@ -14,6 +14,7 @@
             align-items: center;
             min-height: 100vh;
             overflow: hidden;
+            flex-direction: column;
         }
 
         #clockContainer {
@@ -62,6 +63,27 @@
         .hidden {
             display: none !important;
         }
+
+        #instructions {
+            color: white;
+            font-family: 'Arial', sans-serif;
+            font-size: 3vmin;
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+            display: none;
+            max-width: 90%;
+        }
+
+        @media only screen and (max-width: 768px) {
+            #instructions {
+                display: block;
+            }
+            body {
+                padding-bottom: 30vmin; /* Dodaje miejsce na instrukcje */
+            }
+        }
     </style>
 </head>
 <body>
@@ -71,8 +93,21 @@
         <div id="newAnalogClock" class="hidden"><canvas id="newAnalogCanvas"></canvas></div>
         <div id="dateDisplay" class="hidden"></div>
     </div>
+    <div id="instructions">
+        <h3>Instrukcje (gesty):</h3>
+        <p>1 tapnięcie: zmiana koloru zegara</p>
+        <p>2 tapnięcia: zmiana koloru wskazówki sekundowej</p>
+        <p>3 tapnięcia: zmiana koloru wskazówki minutowej</p>
+        <p>4 tapnięcia: zmiana koloru wskazówki godzinowej</p>
+        <p>Przytrzymanie: pokazanie/ukrycie okręgu</p>
+        <p>Przesunięcie w poziomie: zmiana trybu zegara</p>
+        <p>Przesunięcie w pionie: zmiana rozmiaru</p>
+        <p>Przesunięcie 2 palcami w poziomie: zmiana interwału</p>
+    </div>
 
     <script>
+        // [Reszta kodu JavaScript pozostaje bez zmian]
+        
         const clockContainer = document.getElementById('clockContainer');
         const analogClock = document.getElementById('analogClock');
         const simpleAnalogClock = document.getElementById('simpleAnalogClock');
@@ -106,8 +141,8 @@
 
         const intervalMapping = [1000, 10 * 1000, 30 * 1000, 60 * 1000, 5 * 60 * 1000];
         const dateDisplayMapping = [1000, 10 * 1000, 30 * 1000, 60 * 1000, 5 * 60 * 1000];
-        let intervalIndex = 4; // Domyślnie 5 minut
-        let dateDisplayIndex = 0; // Domyślnie 5 sekund
+        let intervalIndex = 4;
+        let dateDisplayIndex = 0;
 
         const polishMonths = [
             'stycznia', 'lutego', 'marca', 'kwietnia', 'maja', 'czerwca',
@@ -368,7 +403,6 @@
 
         setClockMode(currentMode);
 
-        // Obsługa klawiatury (dla desktopu)
         document.addEventListener('keydown', (e) => {
             if (e.key >= '1' && e.key <= '5') {
                 intervalIndex = parseInt(e.key) - 1;
@@ -417,7 +451,6 @@
             }
         });
 
-        // Obsługa gestów dotykowych (dla smartfonów)
         let touchStartX = 0;
         let touchStartY = 0;
         let touchStartTime = 0;
@@ -442,11 +475,10 @@
             const dy = touchEndY - touchStartY;
             const touchCount = e.changedTouches.length;
 
-            // Tapnięcia
             if (Math.abs(dx) < 20 && Math.abs(dy) < 20) {
-                if (touchDuration >= 500) { // Długie przytrzymanie
+                if (touchDuration >= 500) {
                     showCircle = !showCircle;
-                } else { // Krótkie tapnięcie
+                } else {
                     switch (touchCount) {
                         case 1:
                             clockColorIndex = (clockColorIndex + 1) % basicColors.length;
@@ -463,9 +495,8 @@
                     }
                 }
             }
-            // Przesunięcia jednym palcem
             else if (e.changedTouches.length === 1) {
-                if (Math.abs(dx) > Math.abs(dy)) { // Horyzontalne
+                if (Math.abs(dx) > Math.abs(dy)) {
                     if (dx > 50) {
                         currentMode = (currentMode + 1) % 3;
                         setClockMode(currentMode);
@@ -473,7 +504,7 @@
                         currentMode = (currentMode - 1 + 3) % 3;
                         setClockMode(currentMode);
                     }
-                } else { // Wertykalne
+                } else {
                     if (dy < -50) {
                         scale = Math.min(100, scale + 5);
                         updateScale();
@@ -483,9 +514,8 @@
                     }
                 }
             }
-            // Przesunięcia dwoma palcami
             else if (e.changedTouches.length === 2) {
-                if (Math.abs(dx) > Math.abs(dy)) { // Horyzontalne
+                if (Math.abs(dx) > Math.abs(dy)) {
                     if (dx > 50) {
                         intervalIndex = (intervalIndex + 1) % intervalMapping.length;
                         currentIntervalTime = intervalMapping[intervalIndex];
