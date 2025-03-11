@@ -22,10 +22,10 @@
             height: 80vmin;
             margin: auto;
             transition: all 0.5s ease;
-            touch-action: none; /* Zapobiega przewijaniu strony */
+            touch-action: none;
         }
 
-        #analogClock, #digitalClock, #simpleAnalogClock, #newAnalogClock, #dateDisplay {
+        #analogClock, #simpleAnalogClock, #newAnalogClock, #dateDisplay {
             width: 100%;
             height: 100%;
             position: absolute;
@@ -44,11 +44,8 @@
             height: 100%;
         }
 
-        #digitalClock, #dateDisplay {
-            font-size: 10vmin;
-        }
-
         #dateDisplay {
+            font-size: 10vmin;
             display: flex;
             flex-direction: column;
             align-items: flex-start;
@@ -70,7 +67,6 @@
 <body>
     <div id="clockContainer">
         <div id="analogClock"><canvas id="analogCanvas"></canvas></div>
-        <div id="digitalClock" class="hidden"></div>
         <div id="simpleAnalogClock" class="hidden"><canvas id="simpleAnalogCanvas"></canvas></div>
         <div id="newAnalogClock" class="hidden"><canvas id="newAnalogCanvas"></canvas></div>
         <div id="dateDisplay" class="hidden"></div>
@@ -79,7 +75,6 @@
     <script>
         const clockContainer = document.getElementById('clockContainer');
         const analogClock = document.getElementById('analogClock');
-        const digitalClock = document.getElementById('digitalClock');
         const simpleAnalogClock = document.getElementById('simpleAnalogClock');
         const newAnalogClock = document.getElementById('newAnalogClock');
         const dateDisplay = document.getElementById('dateDisplay');
@@ -89,7 +84,7 @@
 
         let scale = 80;
         let currentMode = 0;
-        const modes = [analogClock, digitalClock, simpleAnalogClock, newAnalogClock];
+        const modes = [analogClock, simpleAnalogClock, newAnalogClock];
 
         const basicColors = [
             'white', 'silver', 'gray', 'black', 
@@ -127,7 +122,6 @@
             resizeCanvas(analogCanvas);
             resizeCanvas(simpleAnalogCanvas);
             resizeCanvas(newAnalogCanvas);
-            digitalClock.style.fontSize = `${scale / 8}vmin`;
             dateDisplay.style.fontSize = `${scale / 8}vmin`;
         }
 
@@ -208,9 +202,6 @@
             const hours = now.getHours();
             const minutes = now.getMinutes();
             const seconds = now.getSeconds();
-
-            digitalClock.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            digitalClock.style.color = basicColors[clockColorIndex];
 
             drawAnalogClock(analogCanvas, hours, minutes, seconds, true);
             drawAnalogClock(simpleAnalogCanvas, hours, minutes, seconds, false);
@@ -400,11 +391,11 @@
                         updateScale();
                         break;
                     case 'ArrowRight':
-                        currentMode = (currentMode + 1) % 4;
+                        currentMode = (currentMode + 1) % 3;
                         setClockMode(currentMode);
                         break;
                     case 'ArrowLeft':
-                        currentMode = (currentMode - 1 + 4) % 4;
+                        currentMode = (currentMode - 1 + 3) % 3;
                         setClockMode(currentMode);
                         break;
                     case 'c':
@@ -476,10 +467,10 @@
             else if (e.changedTouches.length === 1) {
                 if (Math.abs(dx) > Math.abs(dy)) { // Horyzontalne
                     if (dx > 50) {
-                        currentMode = (currentMode + 1) % 4;
+                        currentMode = (currentMode + 1) % 3;
                         setClockMode(currentMode);
                     } else if (dx < -50) {
-                        currentMode = (currentMode - 1 + 4) % 4;
+                        currentMode = (currentMode - 1 + 3) % 3;
                         setClockMode(currentMode);
                     }
                 } else { // Wertykalne
